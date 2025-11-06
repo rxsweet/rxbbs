@@ -1,0 +1,32 @@
+name: update_to_FreeHostia
+# 触发条件
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["serv00_ssh_bakup"]
+    types: [completed]
+    
+permissions: write-all
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 设置时区
+        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: 📦 Install ncftp
+        run: sudo apt-get update && sudo apt-get install -y ncftp
+      #- name: Prepare
+        #run: pip install ftputil
+      - name: 执行任务 -update ftp
+        run: |
+           cd ./bbs
+           ncftpput -R -u ${{ secrets.FREEHOSTIA_FTP_USER }} -p ${{ secrets.FREEHOSTIA_FTP_PASS }} ${{ secrets.FREEHOSTIA_FTP_HOST }} /bbs ./*
+           #-R是递归上传文件夹
+           #-u user
+           #-p pass
+           #host (不带ftp://)
+           #/ 远程目录
+           #./test/ 本地目录
