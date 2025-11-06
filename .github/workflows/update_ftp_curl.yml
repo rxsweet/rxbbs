@@ -1,0 +1,36 @@
+name: update_ftp_curl
+# 触发条件
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - all.html
+  workflow_dispatch:
+  
+permissions: write-all
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 设置时区
+        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: 执行任务 -update ftp
+        env:
+          BEGET_HOST: ${{ secrets.BEGET_FTP_HOST }}
+          BEGET_USER: ${{ secrets.BEGET_FTP_USER }}
+          BEGET_PASS: ${{ secrets.BEGET_FTP_PASS }}
+          #FREEHOSTIA_HOST: ${{ secrets.FREEHOSTIA_FTP_HOST }}
+          #FREEHOSTIA_USER: ${{ secrets.FREEHOSTIA_FTP_USER }}
+          #FREEHOSTIA_PASS: ${{ secrets.FREEHOSTIA_FTP_PASS }}
+          #未设置serv00
+          #SERV00_RX_PATH: ${{ secrets.SERV00_FTP_RX_PATH }}
+          #SERV00_USER: ${{ secrets.SERV00_FTP_USER }}
+          #SERV00_PASS: ${{ secrets.SERV00_FTP_PASS }}
+        run: |
+          curl -T ./all.html ftp://${BEGET_HOST}/index.html --user ${BEGET_USER}:${BEGET_PASS} --ssl-reqd || true           #-T是上传,-o是下载,beget要带ssl, || true无论成功，执行下一条
+          #curl -T ./all.html ftp://${FREEHOSTIA_HOST}/index.html --user ${FREEHOSTIA_USER}:${FREEHOSTIA_PASS} || true                             #--ssl-reqd  #-T是上传,-o是下载,beget要带ssl
+          #curl -T ./all.html ftp://s0.serv00.com/domains/${SERV00_RX_PATH}/public_html/index.html --user ${SERV00_USER}:${SERV00_PASS}        #--ssl-reqd  #-T是上传,-o是下载,beget要带ssl
