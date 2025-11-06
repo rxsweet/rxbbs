@@ -1,0 +1,42 @@
+name: serv00_upload
+
+on:
+  workflow_dispatch:      # 手动触发（也可以改成 push）
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload & Extract rx.zip into bbs
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERV00_SSH_HOST }}
+          username: ${{ secrets.SERV00_SSH_USER }}
+          key: ${{ secrets.SERV00_SSH_KEY }}
+          port: 22
+
+          # 1. 上传到家目录下的 bbs 目录（相对路径）
+          source: "rx.zip"
+          target: "domains/${host}/public_html/bbs"
+
+          # 2. 直接在目标目录解压（覆盖旧文件）
+          command: |
+            # 确保目录存在
+            mkdir -p domains/${host}/public_html/bbs
+
+            # 删除旧内容（防止残留文件）
+            rm -rf domains/${host}/public_html/bbs/*
+
+            # 直接解压到当前目录（即 bbs）
+            #   -o  强制覆盖已有文件
+            unzip -o rx.zip
+
+            # 如果 rx.zip 实际上是 tar.gz，下面这行会兜底（极少出现）
+            # unzip -o rx.zip 2>/dev/null || tar -zxf rx.zip -C .
+
+            # 验证
+            echo "=== Deploy finished! Files in bbs ==="
+            ls -la domains/${host}/public_html/bbs/
