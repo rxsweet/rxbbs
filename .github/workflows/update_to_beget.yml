@@ -25,7 +25,7 @@ jobs:
           BEGET_USER: ${{ secrets.BEGET_FTP_USER }}
           BEGET_PASS: ${{ secrets.BEGET_FTP_PASS }}
         run: |
-          lftp -u ${BEGET_USER},${BEGET_PASS} ftp://${BEGET_HOST}/ -e "mirror -R --verbose --progres bbs/ bbs/; quit"
+          lftp -u ${BEGET_USER},${BEGET_PASS} ftp://${BEGET_HOST}/ -e "mirror -R --verbose --progress bbs/ bbs/; quit"
           #lftp -u ${BEGET_USER},${BEGET_PASS} ftp://${BEGET_HOST}/ -e "mirror -R bbs/ bbs/; quit"
           #单文件上传使用：-e "put t/t1.txt -o t2.txt; bye"
           #单文件下载使用： -e "get rx.zip; bye"
