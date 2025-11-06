@@ -1,6 +1,13 @@
 name: serv00_ssh_bakup
 on:
   workflow_dispatch:
+  schedule:
+   - cron: '0 10 * * *'
+  #实际时间：+ 8小时  = 18:00
+  #这个实际每天18:00执行
+  #表达式生成  https://crontab.guru/
+permissions: write-all
+
 jobs:
   backup-serv00:
     runs-on: ubuntu-latest
