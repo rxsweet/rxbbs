@@ -1,0 +1,38 @@
+name: update_to_beget
+# 触发条件
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["serv00_ssh_bakup"]
+    types: [completed]
+
+permissions: write-all
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: 设置时区
+        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Install LFTP
+        run: sudo apt-get update && sudo apt-get install -y lftp
+      - name: 执行任务 -update ftp
+        env:
+          BEGET_HOST: ${{ secrets.BEGET_FTP_HOST }}
+          BEGET_USER: ${{ secrets.BEGET_FTP_USER }}
+          BEGET_PASS: ${{ secrets.BEGET_FTP_PASS }}
+        run: |
+          lftp -u ${BEGET_USER},${BEGET_PASS} ftp://${BEGET_HOST}/ -e "mirror -R bbs/ bbs/; quit"
+          #单文件上传使用：-e "put t/t1.txt -o t2.txt; bye"
+          #单文件下载使用： -e "get rx.zip; bye"
+          #-e "..." ， -e 选项允许你直接在命令行中执行一系列 lftp 内部命令
+          #mirror使用：
+          #没有 -R 时：mirror    远程目录 本地目录 ,会将远程目录下载到本地（从服务器拉取）。
+          #有   -R 时：mirror -R 本地目录 远程目录 ,会将本地目录上传到远程（推送到服务器）。
+          #将本地 ./test/ 目录的内容智能同步（上传）到远程服务器的 test/ 目录
+          #同步并删除：远程目录和本地目录完全一致（即远程服务器上本地不存在的文件也被删除），可用 mirror -R --delete ./test/ test/。警告：此操作不可逆地删除文件
+          #";"在 -e 的引号内，用于分隔多个命令
+          #quit执行完 mirror 操作后，退出 lftp 程序
