@@ -1,0 +1,53 @@
+name: serv00_ssh_bakup
+on:
+  workflow_dispatch:
+jobs:
+  backup-serv00:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: 设置时区
+      run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+    - name: Backup from Serv00
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SERV00_SSH_KEY }}
+        SERV00_USER: ${{ secrets.SERV00_SSH_USER }}
+        SERV00_HOST: ${{ secrets.SERV00_SSH_HOST }}
+      run: |
+        # 设置SSH
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H $SERV00_HOST >> ~/.ssh/known_hosts
+        
+        #bbs的文件路径
+        path="~/domains/${SERV00_HOST}/public_html"
+        echo "使用路径: $path"
+        # 创建压缩文件
+        ssh ${SERV00_USER}@${SERV00_HOST} "cd $path && tar -czf rxbbs.tar.gz bbs/"
+        # 下载
+        scp ${SERV00_USER}@${SERV00_HOST}:"$path/rxbbs.tar.gz" ./
+        # 清理
+        ssh ${SERV00_USER}@${SERV00_HOST} "rm $path/rxbbs.tar.gz"
+
+    - name: Extract and commit
+      run: |
+        mkdir -p bbs
+        if [ -f "rxbbs.tar.gz" ]; then
+          tar -xzf rxbbs.tar.gz -C bbs --strip-components=1
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          #下面的关键的数据部分要上传
+          git add ./rxbbs.tar.gz
+          git add ./bbs/rxdb/
+          git add ./bbs/files/
+          git add ./bbs/images/
+          git add ./bbs/styles/
+          #git add ./bbs/config.php  #不更新配置文件,使用配置好的相对路径文件
+          git commit -m "$(date '+%Y-%m-%d %H:%M:%S') Backup" || exit 0
+          git push
+        else
+          echo "错误：未能找到或下载压缩文件"
+          exit 1
+        fi
