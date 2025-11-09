@@ -10,37 +10,54 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DOMAIN: ${{ secrets.DOMAIN }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Upload & Extract rx.zip into bbs
-        uses: appleboy/scp-action@v1
+      - name: Verify bbs/ exists
+        run: |
+          if [ ! -d "bbs" ]; then
+            echo "ERROR: bbs/ directory not found!"
+            exit 1
+          fi
+          echo "Found bbs/ with $(find bbs -type f | wc -l) files"
+
+      # Step 1: 上传 bbs/ 到远程临时目录
+      - name: Upload bbs/ folder
+        uses: appleboy/scp-action@v0.1.6
         with:
           host: ${{ secrets.DATAONLINE_SSH_HOST }}
           username: ${{ secrets.DATAONLINE_SSH_USER }}
           key: ${{ secrets.DATAONLINE_SSH_KEY }}
           port: 22
-
-          # 1. 上传到家目录下的 bbs 目录（相对路径）
           source: "bbs/"
-          target: "domains/${host}/public_html/bbs"
+          target: "~/bbs_upload_tmp/"
+          overwrite: true
+          strip_components: 0
 
-          # 2. 直接在目标目录解压（覆盖旧文件）
-          command: |
-            # 确保目录存在
-            mkdir -p domains/${host}/public_html/bbs
+      # Step 2: 在远程服务器执行 rsync 覆盖部署
+      - name: Deploy via rsync (remote)
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.DATAONLINE_SSH_HOST }}
+          username: ${{ secrets.DATAONLINE_SSH_USER }}
+          key: ${{ secrets.DATAONLINE_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
 
-            # 删除旧内容（防止残留文件）
-            rm -rf domains/${host}/public_html/bbs/*
+            TARGET_DIR="domains/${DOMAIN}/public_html/bbs"
+            mkdir -p "$TARGET_DIR"
 
-            # 直接解压到当前目录（即 bbs）
-            #   -o  强制覆盖已有文件
-            unzip -o rx.zip
+            echo "Syncing files..."
+            rsync -av --delete ~/bbs_upload_tmp/bbs/ "$TARGET_DIR/"
 
-            # 如果 rx.zip 实际上是 tar.gz，下面这行会兜底（极少出现）
-            # unzip -o rx.zip 2>/dev/null || tar -zxf rx.zip -C .
+            echo "=== Deploy Success! ==="
+            echo "Files in $TARGET_DIR:"
+            ls -la "$TARGET_DIR" | head -15
 
-            # 验证
-            echo "=== Deploy finished! Files in bbs ==="
-            ls -la domains/${host}/public_html/bbs/
+            # 清理临时目录
+            rm -rf ~/bbs_upload_tmp
