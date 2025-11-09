@@ -38,8 +38,8 @@ jobs:
           overwrite: true
           strip_components: 0
 
-      # Step 2: 在远程服务器执行 rsync 覆盖部署
-      - name: Deploy via rsync (remote)
+      # Step 2: 在远程服务器执行覆盖部署（不用 rsync）
+      - name: Deploy with cp & rm (no rsync needed)
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.DATAONLINE_SSH_HOST }}
@@ -50,14 +50,20 @@ jobs:
             set -e
 
             TARGET_DIR="domains/${DOMAIN}/public_html/bbs"
+            TMP_DIR="~/bbs_upload_tmp/bbs"
+
+            echo "Creating target directory..."
             mkdir -p "$TARGET_DIR"
 
-            echo "Syncing files..."
-            rsync -av --delete ~/bbs_upload_tmp/bbs/ "$TARGET_DIR/"
+            echo "Clearing old files in $TARGET_DIR..."
+            find "$TARGET_DIR" -mindepth 1 -delete  # 彻底删除所有内容（保留目录本身）
+
+            echo "Copying new files..."
+            cp -r "$TMP_DIR"/* "$TARGET_DIR"/
 
             echo "=== Deploy Success! ==="
             echo "Files in $TARGET_DIR:"
             ls -la "$TARGET_DIR" | head -15
 
-            # 清理临时目录
+            echo "Cleaning up temporary files..."
             rm -rf ~/bbs_upload_tmp
