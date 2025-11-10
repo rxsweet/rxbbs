@@ -20,10 +20,8 @@ jobs:
           host: ${{ secrets.DATAONLINE_SSH_HOST }}
           username: ${{ secrets.DATAONLINE_SSH_USER }}
           key: ${{ secrets.DATAONLINE_SSH_KEY }}
-          mysite: ${{ secrets.DATAONLINE_SSH_DOMAIN }}
           port: 22
-
-          #上传到家目录下的 bbs 目录（相对路径）
+          #上传到目录下的 bbs 目录（相对路径）
           source: "bbs/"
-          target: "domains/${mysite}/public_html/bbs"
+          target: "domains/${{ secrets.DATAONLINE_SSH_DOMAIN }}/public_html/"
 
