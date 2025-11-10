@@ -10,60 +10,38 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      DATAONLINE_DOMAIN: ${{ secrets.DATAONLINE_SSH_DOMAIN }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify bbs/ exists
-        run: |
-          if [ ! -d "bbs" ]; then
-            echo "ERROR: bbs/ directory not found!"
-            exit 1
-          fi
-          echo "Found bbs/ with $(find bbs -type f | wc -l) files"
-
-      # Step 1: 上传 bbs/ 到远程临时目录
-      - name: Upload bbs/ folder
-        uses: appleboy/scp-action@v0.1.6
+      - name: Upload & Extract rx.zip into bbs
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.DATAONLINE_SSH_HOST }}
           username: ${{ secrets.DATAONLINE_SSH_USER }}
           key: ${{ secrets.DATAONLINE_SSH_KEY }}
+          mysite: ${{ secrets.DATAONLINE_SSH_DOMAIN }}
           port: 22
+
+          # 1. 上传到家目录下的 bbs 目录（相对路径）
           source: "bbs/"
-          target: "~/bbs_upload_tmp/"
-          overwrite: true
-          strip_components: 0
+          target: "domains/${mysite}/public_html/bbs"
 
-      # Step 2: 在远程服务器执行覆盖部署（不用 rsync）
-      - name: Deploy with cp & rm (no rsync needed)
-        uses: appleboy/ssh-action@v0.1.7
-        with:
-          host: ${{ secrets.DATAONLINE_SSH_HOST }}
-          username: ${{ secrets.DATAONLINE_SSH_USER }}
-          key: ${{ secrets.DATAONLINE_SSH_KEY }}
-          port: 22
-          script: |
-            set -e
+          # 2. 直接在目标目录解压（覆盖旧文件）
+          command: |
+            # 确保目录存在
+            mkdir -p domains/${mysite}/public_html/bbs
 
-            TARGET_DIR="domains/${DATAONLINE_DOMAIN}/public_html/bbs"
-            TMP_DIR="~/bbs_upload_tmp/bbs"
+            # 删除旧内容（防止残留文件）
+            rm -rf domains/${mysite}/public_html/bbs/*
 
-            echo "Creating target directory..."
-            mkdir -p "$TARGET_DIR"
+            # 直接解压到当前目录（即 bbs）
+            #   -o  强制覆盖已有文件
+            #unzip -o rx.zip
 
-            echo "Clearing old files in $TARGET_DIR..."
-            find "$TARGET_DIR" -mindepth 1 -delete  # 彻底删除所有内容（保留目录本身）
+            # 如果 rx.zip 实际上是 tar.gz，下面这行会兜底（极少出现）
+            # unzip -o rx.zip 2>/dev/null || tar -zxf rx.zip -C .
 
-            echo "Copying new files..."
-            cp -r "$TMP_DIR"/* "$TARGET_DIR"/
-
-            echo "=== Deploy Success! ==="
-            echo "Files in $TARGET_DIR:"
-            ls -la "$TARGET_DIR" | head -15
-
-            echo "Cleaning up temporary files..."
-            rm -rf ~/bbs_upload_tmp
+            # 验证
+            echo "=== Deploy finished! Files in bbs ==="
+            ls -la domains/${mysite}/public_html/bbs/
