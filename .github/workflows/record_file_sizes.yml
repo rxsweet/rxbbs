@@ -1,4 +1,4 @@
-name: Record File Sizes
+name: record_file_sizes
 
 on:
   workflow_dispatch:
