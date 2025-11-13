@@ -1,4 +1,4 @@
-name: update_to_dataonline_ssh
+name: 暂停使用update_to_dataonline_ssh
 
 # 触发条件
 on:
