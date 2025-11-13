@@ -2,6 +2,8 @@ name: update_to_beget_ftp
 # 触发条件
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [update-ftp]
   push:
     branches:
       - main
