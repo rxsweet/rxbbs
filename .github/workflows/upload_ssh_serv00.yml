@@ -1,4 +1,4 @@
-name: serv00_ssh_upload
+name: upload_ssh_serv00
 
 # 触发条件
 on:
