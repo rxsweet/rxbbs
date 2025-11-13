@@ -1,0 +1,60 @@
+name: record_file_sizes
+
+on:
+  workflow_dispatch:     # 手动触发
+  #schedule:
+    #- cron: '0 6 * * *'  # 每天 UTC 6:00（可调）
+
+permissions: write-all
+
+jobs:
+  get-file-sizes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get file sizes and write to size.txt
+        run: |
+          # 确保文件存在
+          if [ ! -f "bbs/rxdb/rx.db" ]; then
+            echo "bbs/rxdb/rx.db not found!" >&2
+            exit 1
+          fi
+          if [ ! -f "rxbbs.tar.gz" ]; then
+            echo "rxbbs.tar.gz not found!" >&2
+            exit 1
+          fi
+
+          # 获取文件大小（字节）
+          db_size=$(stat -c%s "bbs/rxdb/rx.db")
+          tar_size=$(stat -c%s "rxbbs.tar.gz")
+
+          # 写入 size.txt（可读格式）
+          {
+            echo "# File Size Report - $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo "bbs/rxdb/rx.db: ${db_size} bytes"
+            echo "rxbbs.tar.gz: ${tar_size} bytes"
+            echo ""
+            echo "## Human Readable"
+            echo "rx.db: $(numfmt --to=iec-i --suffix=B ${db_size})"
+            echo "rxbbs.tar.gz: $(numfmt --to=iec-i --suffix=B ${tar_size})"
+          } > size.txt
+
+          echo "size.txt created:"
+          cat size.txt
+
+      - name: Commit and push size.txt
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+
+          git add size.txt
+          git commit -m "chore: update file sizes $(date -u '+%Y-%m-%d %H:%M UTC')" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref_name }} || echo "Push failed (maybe no changes)"
+
+      - name: Upload size.txt as artifact (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: size-report
+          path: size.txt
