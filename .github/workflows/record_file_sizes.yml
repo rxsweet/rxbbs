@@ -45,7 +45,7 @@ jobs:
             git add size.txt
             git -c user.name="$GIT_AUTHOR_NAME" -c user.email="$GIT_AUTHOR_EMAIL" \
                 commit -m "init: create size.txt with rx.db size"
-            git push origin HEAD:${{ github.ref_name }}
+            git push origin main
             echo "size.txt 已创建并提交"
             exit 0
           fi
@@ -57,7 +57,7 @@ jobs:
             git add size.txt
             git -c user.name="$GIT_AUTHOR_NAME" -c user.email="$GIT_AUTHOR_EMAIL" \
                 commit -m "chore: update rx.db size $(date -u '+%Y-%m-%d %H:%M UTC')"
-            git push origin HEAD:${{ github.ref_name }}
+            git push origin main
             echo "size.txt 已更新并提交"
           else
             echo "rx.db 文件大小未变化，无需更新"
