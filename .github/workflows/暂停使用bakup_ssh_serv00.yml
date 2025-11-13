@@ -1,4 +1,4 @@
-name: bakup_ssh_serv00
+name: 暂停使用bakup_ssh_serv00
 on:
   workflow_dispatch:
   #因serv00服务器有点慢，暂时先用dataonline，如dataonline空间不能用了，再换回serv00
