@@ -62,3 +62,10 @@ jobs:
           else
             echo "rx.db 文件大小未变化，无需更新"
           fi
+
+      - name: 为了触发其他工作流
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CHU_FA_ACTIONS_GONG_ZUO_LIU_TOKEN }}  # 👈 必须是 PAT，不是 GITHUB_TOKEN
+          repository: ${{ github.repository }}
+          event-type: update-ftp
