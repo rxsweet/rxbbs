@@ -1,0 +1,7 @@
+# File Size Report - 2025-11-13 08:15 UTC
+bbs/rxdb/rx.db: 1392640 bytes
+rxbbs.tar.gz: 5989589 bytes
+
+## Human Readable
+rx.db: 1.4MiB
+rxbbs.tar.gz: 5.8MiB
