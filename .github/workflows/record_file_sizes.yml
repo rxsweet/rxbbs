@@ -62,9 +62,3 @@ jobs:
           else
             echo "rx.db 文件大小未变化，无需更新"
           fi
-
-      - name: Upload tamp.txt as artifact (for debug)
-        uses: actions/upload-artifact@v4
-        with:
-          name: size-report
-          path: tamp.txt
