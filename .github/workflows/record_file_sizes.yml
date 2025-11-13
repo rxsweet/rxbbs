@@ -2,8 +2,8 @@ name: record_file_sizes
 
 on:
   workflow_dispatch:     # 手动触发
-  #schedule:
-    #- cron: '0 6 * * *'  # 每天 UTC 6:00（可调）
+  schedule:
+    - cron: '0 6 * * *'  # 每天 UTC 6:00
 
 permissions: write-all
 
@@ -14,47 +14,51 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get file sizes and write to size.txt
+      - name: Generate tamp.txt with current file sizes
         run: |
-          # 确保文件存在
+          # 检查文件是否存在
           if [ ! -f "bbs/rxdb/rx.db" ]; then
             echo "bbs/rxdb/rx.db not found!" >&2
-            exit 1
-          fi
-          if [ ! -f "rxbbs.tar.gz" ]; then
-            echo "rxbbs.tar.gz not found!" >&2
             exit 1
           fi
 
           # 获取文件大小（字节）
           db_size=$(stat -c%s "bbs/rxdb/rx.db")
-          tar_size=$(stat -c%s "rxbbs.tar.gz")
 
-          # 写入 size.txt（可读格式）
+          # 写入 tamp.txt
           {
-            echo "# File Size Report - $(date -u '+%Y-%m-%d %H:%M UTC')"
             echo "bbs/rxdb/rx.db: ${db_size} bytes"
-            echo "rxbbs.tar.gz: ${tar_size} bytes"
-            echo ""
-            echo "## Human Readable"
-            echo "rx.db: $(numfmt --to=iec-i --suffix=B ${db_size})"
-            echo "rxbbs.tar.gz: $(numfmt --to=iec-i --suffix=B ${tar_size})"
-          } > size.txt
+          } > tamp.txt
 
-          echo "size.txt created:"
-          cat size.txt
+          echo "tamp.txt 已生成："
+          cat tamp.txt
 
-      - name: Commit and push size.txt
+      - name: Compare tamp.txt with size.txt and update if different
         run: |
-          git config user.name "GitHub Action"
-          git config user.email "action@github.com"
+          # 如果 size.txt 不存在，直接复制 tamp.txt → size.txt
+          if [ ! -f "size.txt" ]; then
+            echo "size.txt 不存在，创建并复制 tamp.txt"
+            cp tamp.txt size.txt
+            git add size.txt
+            git commit -m "init: create size.txt with current file sizes"
+            git push origin HEAD:${{ github.ref_name }}
+            exit 0
+          fi
 
-          git add size.txt
-          git commit -m "chore: update file sizes $(date -u '+%Y-%m-%d %H:%M UTC')" || echo "No changes to commit"
-          git push origin HEAD:${{ github.ref_name }} || echo "Push failed (maybe no changes)"
+          # 对比 tamp.txt 和 size.txt
+          if ! cmp -s "tamp.txt" "size.txt"; then
+            echo "文件大小发生变化！正在更新 size.txt"
+            cp tamp.txt size.txt
+            git add size.txt
+            git commit -m "chore: update file sizes $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git push origin HEAD:${{ github.ref_name }}
+            echo "size.txt 已更新并提交"
+          else
+            echo "文件大小未变化，无需更新 size.txt"
+          fi
 
-      - name: Upload size.txt as artifact (optional)
+      - name: Upload tamp.txt as artifact (for debugging)
         uses: actions/upload-artifact@v4
         with:
           name: size-report
-          path: size.txt
+          path: tamp.txt
