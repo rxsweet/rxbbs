@@ -16,23 +16,14 @@ jobs:
       - name: 安装 lftp
         run: sudo apt-get update -qq && sudo apt-get install -y lftp
 
-      - name: 上传到 Beget（2025 年后终极稳解）
+      - name: 一行版终极方案
         env:
           HOST: ${{ secrets.BEGET_FTP_HOST }}
           USER: ${{ secrets.BEGET_FTP_USER }}
           PASS: ${{ secrets.BEGET_FTP_PASS }}
-        run: |
-          lftp -c "
-          set ftp:ssl-force true                  # 从第一字节就加密（Implicit）
-          set ftp:ssl-protect-data true            # 数据通道也强制加密（PROT P）
-          set ssl:verify-certificate false         # Beget 自签名证书
-          set ftp:use-fxp no                       # 禁用FXP
-          set net:timeout 30
-          set net:max-retries 5
-          set net:reconnect-interval-base 5
-          open -p 990 ftps://$HOST                 # 强制 990 端口 Implicit FTPS
-          user $USER $PASS
-          lcd ./bbs                                # 本地切换到 bbs 目录
-          mirror -R -P=10 --delete --verbose      # -R 上传  -P 并行10个  --delete 同步删除
-          bye
-          "
+        run: >-
+          lftp -u $USER,$PASS -p 990 ftps://$HOST
+          -e "set ssl:verify-certificate false;
+              set ftp:ssl-protect-data true;
+              mirror -R -P=10 --delete --verbose ./bbs /bbs;
+              bye"
