@@ -78,7 +78,7 @@ jobs:
 
           # 强制添加需要备份的所有文件
           git add -f rxbbs.tar.gz
-          git add -f bbs/rxdb/ bbs/files/ bbs/images/ bbs/styles/
+          git add -f bbs/rxdb/ bbs/files/ bbs/images/
           git add size.txt
 
           # 提交（包含所有变更）
