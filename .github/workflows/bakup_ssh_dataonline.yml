@@ -56,11 +56,9 @@ jobs:
           exit 1
         fi
         tar -xzf rxbbs.tar.gz -C bbs --strip-components=1
-        # 2. 生成 tamp.txt（临时文件）
-        # 获取文件大小（字节）
+        # 2. 生成 tamp.txt
         db_size=$(stat -c%s "bbs/rxdb/rx.db")
         tar_size=$(stat -c%s "rxbbs.tar.gz")
-        # 写入 tamp.txt（可读格式）
         {
           echo "bbs/rxdb/rx.db: ${db_size} bytes"
           echo "rxbbs.tar.gz: ${tar_size} bytes"
@@ -68,31 +66,30 @@ jobs:
         echo "tamp.txt 已生成："
         cat tamp.txt
         # 3. Git 配置
-        git config --local user.name  "$GIT_AUTHOR_NAME"
+        git config --local user.name "$GIT_AUTHOR_NAME"
         git config --local user.email "$GIT_AUTHOR_EMAIL"
-        # 4. 强制添加你关心的文件（避免 untracked 干扰）
+        # 4. 强制添加所有文件
         git add -f ./rxbbs.tar.gz
-        git add -f ./bbs/rxdb/
-        git add -f ./bbs/files/
-        git add -f ./bbs/images/
-        git add -f ./bbs/styles/
-        # 5. 处理 size.txt
+        git add -f ./bbs/rxdb/ ./bbs/files/ ./bbs/images/ ./bbs/styles/
+        # 5. 处理 size.txt（只 add，不 commit）
         if [ ! -f "size.txt" ]; then
           cp tamp.txt size.txt
           git add size.txt
-          git commit -m "init: create size.txt with rx.db size"
+          COMMIT_MSG="init: create size.txt with rx.db size"
         elif ! cmp -s "tamp.txt" "size.txt"; then
           cp tamp.txt size.txt
           git add size.txt
-          git commit -m "chore: update rx.db size $(date -u '+%Y-%m-%d %H:%M UTC')"
+          COMMIT_MSG="chore: update rx.db size $(date -u '+%Y-%m-%d %H:%M UTC')"
         else
-          echo "rx.db size unchanged"
+          COMMIT_MSG="backup: $(date '+%Y-%m-%d %H:%M:%S') Backup"
         fi
-        # 6. 提交备份压缩包（即使 size.txt 没变）
+        # 6. 统一判断是否有任何变更 → 只提交一次
         if git diff --cached --quiet; then
-          echo "无文件变更，跳过 commit"
+          echo "无任何文件变更，跳过提交"
+          exit 0
         else
-          git commit -m "$(date '+%Y-%m-%d %H:%M:%S') Backup" || true
+          git commit -m "$COMMIT_MSG"
+          echo "已提交：$COMMIT_MSG"
         fi
     - name: Push to main
       run: |
