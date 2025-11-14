@@ -1,4 +1,4 @@
-name: down_FreeHostia_目录
+name: 暂停使用down_FreeHostia_目录
 # 触发条件
 on:
   workflow_dispatch:
