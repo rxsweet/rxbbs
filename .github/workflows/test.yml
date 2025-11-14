@@ -1,0 +1,32 @@
+name: test
+# 触发条件
+on:
+  repository_dispatch:
+    types: [bbs-upload]
+  workflow_dispatch:  # 保留手动触发
+jobs:
+  upload-ftp:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: 设置时区
+        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: 📦 Install ncftp
+        run: sudo apt-get update && sudo apt-get install -y ncftp
+      - name: 执行任务 -update ftp
+        env:
+          BEGET_HOST: ${{ secrets.BEGET_FTP_HOST }}
+          BEGET_USER: ${{ secrets.BEGET_FTP_USER }}
+          BEGET_PASS: ${{ secrets.BEGET_FTP_PASS }}
+        run: |
+           cd ./bbs1
+           ncftpput -R -u ${BEGET_USER} -p ${BEGET_PASS} ${BEGET_HOST} /bbs1 ./*
+           #-R是递归上传文件夹
+           #-u user
+           #-p pass
+           #host (不带ftp://)
+           #/ 远程目录
+           #./test/ 本地目录
