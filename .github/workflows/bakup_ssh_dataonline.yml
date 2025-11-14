@@ -75,31 +75,25 @@ jobs:
         git add ./rxbbs.tar.gz
         git add ./bbs/rxdb/ ./bbs/files/ ./bbs/images/ ./bbs/styles/
         # ---------- 5. 处理 size.txt ----------
-        commit_needed=false
         if [ ! -f "size.txt" ]; then
           cp tamp.txt size.txt
           git add size.txt
           git commit -m "init: create size.txt with rx.db size"
-          commit_needed=true
           echo "size.txt 已创建"
         elif ! cmp -s "tamp.txt" "size.txt"; then
           cp tamp.txt size.txt
           git add size.txt
           git commit -m "chore: update size.txt $(date '+%Y-%m-%d %H:%M:%S')"
-          commit_needed=true
           echo "size.txt 已更新"
         else
           echo "rx.db 大小未变化，size.txt 无需更新"
         fi
         # ---------- 6. 提交备份（即使 size.txt 未变，也要提交压缩包等） ----------
-        if [ "$commit_needed" = false ]; then
-          # 检查是否有其他文件变更（比如压缩包更新了）
-          if git status --porcelain | grep -q .; then
-            git commit -m "$(date '+%Y-%m-%d %H:%M:%S') Backup"
-            echo "已提交备份文件变更"
-          else
-            echo "无任何文件变更，跳过 commit"
-          fi
+        if git status --porcelain | grep -q .; then
+          git commit -m "$(date '+%Y-%m-%d %H:%M:%S') Backup"
+          echo "已提交备份文件变更"
+        else
+          echo "无任何文件变更，跳过 commit"
         fi
     - name: Push all changes to repository
       run: |
