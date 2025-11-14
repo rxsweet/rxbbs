@@ -97,7 +97,7 @@ jobs:
             echo "size.txt 已更新，触发 FTP 上传工作流..."
             
             curl -X POST \
-              -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+              -H "Authorization: token ${{ secrets.CHU_FA_ACTIONS_GONG_ZUO_LIU_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
               https://api.github.com/repos/${{ github.repository }}/dispatches \
               -d '{
