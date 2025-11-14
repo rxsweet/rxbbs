@@ -1,0 +1,27 @@
+name: update_to_serv00_ssh_test
+# 触发条件
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - size.txt
+  workflow_dispatch:
+jobs:
+  upload-ftp:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload bbs
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.SERV00_SSH_HOST }}
+          username: ${{ secrets.SERV00_SSH_USER }}
+          key: ${{ secrets.SERV00_SSH_KEY }}
+          port: 22
+          #上传到目录下的 bbs 目录（相对路径）
+          source: "bbs/"
+          target: "domains/${{ secrets.SERV00_SSH_HOST }}/public_html/"
