@@ -43,21 +43,20 @@ jobs:
         # 清理
         ssh ${DATAONLINE_USER}@${DATAONLINE_HOST} "rm $path/rxbbs.tar.gz"
 
-
     - name: Extract, compute size, and commit changes
       env:
         GIT_AUTHOR_NAME: GitHub Action
         GIT_AUTHOR_EMAIL: action@github.com
       run: |
         set -euo pipefail
-        # ---------- 1. 解压 ----------
+        # 1. 解压
         mkdir -p bbs
         if [ ! -f "rxbbs.tar.gz" ]; then
-          echo "错误：未能找到或下载压缩文件 rxbbs.tar.gz"
+          echo "错误：rxbbs.tar.gz 不存在"
           exit 1
         fi
         tar -xzf rxbbs.tar.gz -C bbs --strip-components=1
-        # ---------- 2. 生成 tamp.txt ----------
+        # 2. 生成 tamp.txt（临时文件）
         # 获取文件大小（字节）
         db_size=$(stat -c%s "bbs/rxdb/rx.db")
         tar_size=$(stat -c%s "rxbbs.tar.gz")
@@ -68,34 +67,34 @@ jobs:
         } > tamp.txt
         echo "tamp.txt 已生成："
         cat tamp.txt
-        # ---------- 3. 配置 Git ----------
+        # 3. Git 配置
         git config --local user.name  "$GIT_AUTHOR_NAME"
         git config --local user.email "$GIT_AUTHOR_EMAIL"
-        # ---------- 4. 始终添加核心文件 ----------
-        git add ./rxbbs.tar.gz
-        git add ./bbs/rxdb/ ./bbs/files/ ./bbs/images/ ./bbs/styles/
-        # ---------- 5. 处理 size.txt ----------
+        # 4. 强制添加你关心的文件（避免 untracked 干扰）
+        git add -f ./rxbbs.tar.gz
+        git add -f ./bbs/rxdb/
+        git add -f ./bbs/files/
+        git add -f ./bbs/images/
+        git add -f ./bbs/styles/
+        # 5. 处理 size.txt
         if [ ! -f "size.txt" ]; then
           cp tamp.txt size.txt
           git add size.txt
           git commit -m "init: create size.txt with rx.db size"
-          echo "size.txt 已创建"
         elif ! cmp -s "tamp.txt" "size.txt"; then
           cp tamp.txt size.txt
           git add size.txt
-          git commit -m "chore: update size.txt $(date '+%Y-%m-%d %H:%M:%S')"
-          echo "size.txt 已更新"
+          git commit -m "chore: update rx.db size $(date -u '+%Y-%m-%d %H:%M UTC')"
         else
-          echo "rx.db 大小未变化，size.txt 无需更新"
+          echo "rx.db size unchanged"
         fi
-        # ---------- 6. 提交备份（即使 size.txt 未变，也要提交压缩包等） ----------
-        if git status --porcelain | grep -q .; then
-          git commit -m "$(date '+%Y-%m-%d %H:%M:%S') Backup"
-          echo "已提交备份文件变更"
+        # 6. 提交备份压缩包（即使 size.txt 没变）
+        if git diff --cached --quiet; then
+          echo "无文件变更，跳过 commit"
         else
-          echo "无任何文件变更，跳过 commit"
+          git commit -m "$(date '+%Y-%m-%d %H:%M:%S') Backup" || true
         fi
-    - name: Push all changes to repository
+    - name: Push to main
       run: |
-        git push origin main  # 现在是在 main 分支上，安全推送
-        echo "所有变更已推送到 main 分支"
+        git push origin main
+        echo "已推送到远程 main 分支"
