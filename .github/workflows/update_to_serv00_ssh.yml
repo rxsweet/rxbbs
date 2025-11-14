@@ -1,39 +1,13 @@
 name: update_to_serv00_ssh
 # 触发条件
 on:
-  workflow_dispatch:
-  workflow_run:
-    workflows: ["bakup_ssh_dataonline"]
-    types: [completed]
-    branches:
-      - main
-
+  repository_dispatch:
+    types: [bbs-upload]
+  workflow_dispatch:  # 保留手动触发
 jobs:
-  # 第一步：判断是否需要触发
-  check-trigger:
-    runs-on: ubuntu-latest
-    outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
-    steps:
-      - name: Check if size.txt was updated
-        id: check
-        run: |
-          MSG="${{ github.event.workflow_run.head_commit.message }}"
-          if [[ "$MSG" == "update size.txt" ]]; then
-            echo "should_run=true" >> $GITHUB_OUTPUT
-            echo "size.txt 已更新，准备上传 FTP"
-          else
-            echo "should_run=false" >> $GITHUB_OUTPUT
-            echo "size.txt 未更新，跳过 FTP 上传"
-          fi
-
-  # 第二步：只有在 size.txt 变了才运行
   upload-ftp:
-    needs: check-trigger
-    if: ${{ needs.check-trigger.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     permissions: write-all
-    #真正的开始
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
