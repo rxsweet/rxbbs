@@ -19,7 +19,7 @@ jobs:
           server: ${{ secrets.BEGET_FTP_HOST }}
           username: ${{ secrets.BEGET_FTP_USER }}
           password: ${{ secrets.BEGET_FTP_PASS }}
-          local-dir: ./bbs1/
-          server-dir: /bbs1/
+          local-dir: ./bbs/
+          server-dir: /bbs/
           protocol: ftps
           security: loose
