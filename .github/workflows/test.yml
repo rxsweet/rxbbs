@@ -23,7 +23,7 @@ jobs:
           BEGET_PASS: ${{ secrets.BEGET_FTP_PASS }}
         run: |
            cd ./bbs1
-           ncftpput -R -u ${BEGET_USER} -p ${BEGET_PASS} ${BEGET_HOST} /bbs1 ./*
+           ncftpput -E -R -u ${BEGET_USER} -p ${BEGET_PASS} ${BEGET_HOST} /bbs1 ./*
            #-R是递归上传文件夹
            #-u user
            #-p pass
