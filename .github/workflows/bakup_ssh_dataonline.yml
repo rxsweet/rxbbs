@@ -85,13 +85,6 @@ jobs:
           COMMIT_MSG="backup: $(date '+%Y-%m-%d %H:%M:%S') Backup"
         fi
         # 6. 统一判断是否有任何变更 → 只提交一次
-        if git diff --cached --quiet; then
-          echo "无任何文件变更，跳过提交"
-          exit 0
-        else
-          git commit -m "$COMMIT_MSG"
-          echo "已提交：$COMMIT_MSG"
-        fi
         # 在提交后，如果是 "update size.txt"，就触发 FTP 上传
         if git diff --cached --quiet; then
           echo "无任何文件变更，跳过提交"
