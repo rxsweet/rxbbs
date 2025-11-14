@@ -1,27 +1,25 @@
 name: test1
-# 触发条件
 on:
   repository_dispatch:
     types: [bbs-upload]
-  workflow_dispatch:  # 保留手动触发
+  workflow_dispatch:
+
 jobs:
   upload-ftp:
     runs-on: ubuntu-latest
-    permissions: write-all
     steps:
       - name: 设置时区
-        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+        run: sudo timedatectl set-timezone 'Asia/Shanghai'
+
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - name: 一键上传（最懒人版）
-        uses: SamKirkland/FTP-Deploy-Action@v4
+
+      - name: 部署到 Beget FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.BEGET_FTP_HOST }}
           username: ${{ secrets.BEGET_FTP_USER }}
           password: ${{ secrets.BEGET_FTP_PASS }}
           local-dir: ./bbs1/
           server-dir: /bbs1/
-          dangerous-clean-slate: false   # true=删除远端多余文件
-          protocol: ftps                 # 关键！强制 ftps
-          security: loose                # 接受自签名证书
+          protocol: ftps
+          security: loose
