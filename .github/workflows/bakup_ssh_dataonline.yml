@@ -103,5 +103,5 @@ jobs:
         fi
     - name: Push all changes to repository
       run: |
-        git push origin HEAD:main
+        git push origin main  # 现在是在 main 分支上，安全推送
         echo "所有变更已推送到 main 分支"
