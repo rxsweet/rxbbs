@@ -1,0 +1,25 @@
+name: test1
+# 触发条件
+on:
+  repository_dispatch:
+    types: [bbs-upload]
+  workflow_dispatch:  # 保留手动触发
+jobs:
+  upload-ftp:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: 设置时区
+        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Upload to FTP (支持 FTPS)
+        uses: sebastianpopp/ftp-action@releases/v3
+        with:
+          host: ${{ secrets.BEGET_FTP_HOST }}
+          user: ${{ secrets.BEGET_FTP_USER }}
+          password: ${{ secrets.BEGET_FTP_PASS }}
+          localDir: "bbs1"
+          remoteDir: "/bbs1"
+          options: "-R --delete"  # -R 递归，--delete 可选
