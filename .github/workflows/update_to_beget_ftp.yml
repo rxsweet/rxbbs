@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - 'size.txt'
+      - 'rxbbs.tar.gz'
   #workflow_run:
     #workflows: ["serv00_ssh_bakup"]
     #types: [completed]
