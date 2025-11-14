@@ -1,2 +1,2 @@
-bbs/rxdb/rx.db: 1396736 bytes
-rxbbs.tar.gz: 6127553 bytes
+bbs/rxdb/rx.db: 1409024 bytes
+rxbbs.tar.gz: 6131903 bytes
