@@ -80,7 +80,7 @@ jobs:
           cat size.txt
           cp tamp.txt size.txt
           git add size.txt
-          COMMIT_MSG="update size.txt"
+          COMMIT_MSG="$(date '+%Y-%m-%d %H:%M:%S') update size.txt"
         else
           COMMIT_MSG="backup: $(date '+%Y-%m-%d %H:%M:%S') Backup"
         fi
@@ -91,6 +91,27 @@ jobs:
         else
           git commit -m "$COMMIT_MSG"
           echo "已提交：$COMMIT_MSG"
+        fi
+        # 在提交后，如果是 "update size.txt"，就触发 FTP 上传
+        if git diff --cached --quiet; then
+          echo "无任何文件变更，跳过提交"
+          exit 0
+        else
+          git commit -m "$COMMIT_MSG"
+          echo "已提交：$COMMIT_MSG"
+          # 如果是 size.txt 更新，触发 FTP 上传
+          if [[ "$COMMIT_MSG" == "update size.txt" ]]; then
+            echo "size.txt 已更新，触发 FTP 上传工作流..."
+            
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/dispatches \
+              -d '{
+                "event_type": "bbs-upload",
+                "client_payload": { "triggered_by": "bakup_ssh_dataonline", "reason": "size.txt updated" }
+              }'
+          fi
         fi
     - name: Push to main
       run: |
