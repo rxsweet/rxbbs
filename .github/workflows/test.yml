@@ -1,32 +1,38 @@
-name: test
-# 触发条件
+name: test1
 on:
   repository_dispatch:
     types: [bbs-upload]
-  workflow_dispatch:  # 保留手动触发
+  workflow_dispatch:
+
 jobs:
   upload-ftp:
     runs-on: ubuntu-latest
-    permissions: write-all
     steps:
       - name: 设置时区
-        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+        run: sudo timedatectl set-timezone 'Asia/Shanghai'
+
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - name: 📦 Install ncftp
-        run: sudo apt-get update && sudo apt-get install -y ncftp
-      - name: 执行任务 -update ftp
+
+      - name: 安装 lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
+
+      - name: 上传到 Beget（2025 年后终极稳解）
         env:
-          BEGET_HOST: ${{ secrets.BEGET_FTP_HOST }}
-          BEGET_USER: ${{ secrets.BEGET_FTP_USER }}
-          BEGET_PASS: ${{ secrets.BEGET_FTP_PASS }}
+          HOST: ${{ secrets.BEGET_FTP_HOST }}
+          USER: ${{ secrets.BEGET_FTP_USER }}
+          PASS: ${{ secrets.BEGET_FTP_PASS }}
         run: |
-           cd ./bbs1
-           ncftpput -E -R -u ${BEGET_USER} -p ${BEGET_PASS} ${BEGET_HOST} /bbs1 ./*
-           #-R是递归上传文件夹
-           #-u user
-           #-p pass
-           #host (不带ftp://)
-           #/ 远程目录
-           #./test/ 本地目录
+          lftp -c "
+          set ftp:ssl-force true                  # 从第一字节就加密（Implicit）
+          set ftp:ssl-protect-data true            # 数据通道也强制加密（PROT P）
+          set ssl:verify-certificate false         # Beget 自签名证书
+          set ftp:use-fxp no                       # 禁用FXP
+          set net:timeout 30
+          set net:max-retries 5
+          set net:reconnect-interval-base 5
+          open -p 990 ftps://$HOST                 # 强制 990 端口 Implicit FTPS
+          user $USER $PASS
+          lcd ./bbs                                # 本地切换到 bbs 目录
+          mirror -R -P=10 --delete --verbose      # -R 上传  -P 并行10个  --delete 同步删除
+          bye
+          "
