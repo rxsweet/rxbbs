@@ -14,12 +14,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-      - name: Upload to FTP (支持 FTPS)
-        uses: sebastianpopp/ftp-action@releases/v3
+      - name: 一键上传（最懒人版）
+        uses: SamKirkland/FTP-Deploy-Action@v4
         with:
-          host: ${{ secrets.BEGET_FTP_HOST }}
-          user: ${{ secrets.BEGET_FTP_USER }}
+          server: ${{ secrets.BEGET_FTP_HOST }}
+          username: ${{ secrets.BEGET_FTP_USER }}
           password: ${{ secrets.BEGET_FTP_PASS }}
-          localDir: "bbs1"
-          remoteDir: "/bbs1"
-          options: "-R --delete"  # -R 递归，--delete 可选
+          local-dir: ./bbs1/
+          server-dir: /bbs1/
+          dangerous-clean-slate: false   # true=删除远端多余文件
+          protocol: ftps                 # 关键！强制 ftps
+          security: loose                # 接受自签名证书
