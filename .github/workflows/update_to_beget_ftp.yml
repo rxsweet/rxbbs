@@ -1,5 +1,5 @@
 #使用lftp上传比较慢，现在使用的actions小程序
-name: 暂停使用update_to_beget_ftp
+name: update_to_beget_ftp
 # 触发条件
 on:
   #repository_dispatch:
