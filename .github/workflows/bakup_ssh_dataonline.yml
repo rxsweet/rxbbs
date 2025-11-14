@@ -80,7 +80,7 @@ jobs:
           cat size.txt
           cp tamp.txt size.txt
           git add size.txt
-          COMMIT_MSG="chore: update rx.db size $(date '+%Y-%m-%d %H:%M:%S')"
+          COMMIT_MSG="update size.txt"
         else
           COMMIT_MSG="backup: $(date '+%Y-%m-%d %H:%M:%S') Backup"
         fi
