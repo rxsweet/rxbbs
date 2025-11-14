@@ -80,7 +80,7 @@ jobs:
           cat size.txt
           cp tamp.txt size.txt
           git add size.txt
-          COMMIT_MSG="$(date '+%Y-%m-%d %H:%M:%S') update size.txt"
+          COMMIT_MSG="update size.txt"
         else
           COMMIT_MSG="backup: $(date '+%Y-%m-%d %H:%M:%S') Backup"
         fi
