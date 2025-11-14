@@ -19,7 +19,7 @@ jobs:
         id: check
         run: |
           MSG="${{ github.event.workflow_run.head_commit.message }}"
-          if [[ "$MSG" == *"update size.txt"* ]]; then
+          if [[ "$MSG" == "update size.txt" ]]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
             echo "size.txt 已更新，准备上传 FTP"
           else
