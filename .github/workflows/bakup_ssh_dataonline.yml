@@ -15,6 +15,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+        with:
+          ref: main   # 关键！强制 checkout main 分支
+          fetch-depth: 0  # 推荐：完整历史，便于 push
     - name: 设置时区
       run: sudo timedatectl set-timezone 'Asia/Shanghai' 
     - name: Backup from bbs
