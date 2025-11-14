@@ -10,14 +10,14 @@ on:
 permissions: write-all
 
 jobs:
-  backup-serv00:
+  backup-bbs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: 设置时区
       run: sudo timedatectl set-timezone 'Asia/Shanghai' 
-    - name: Backup from Serv00
+    - name: Backup from bbs
       env:
         SSH_PRIVATE_KEY: ${{ secrets.DATAONLINE_SSH_KEY }}
         DATAONLINE_USER: ${{ secrets.DATAONLINE_SSH_USER }}
@@ -55,12 +55,14 @@ jobs:
         fi
         tar -xzf rxbbs.tar.gz -C bbs --strip-components=1
         # ---------- 2. 生成 tamp.txt ----------
-        if [ ! -f "bbs/rxdb/rx.db" ]; then
-          echo "Error: bbs/rxdb/rx.db not found!" >&2
-          exit 1
-        fi
+        # 获取文件大小（字节）
         db_size=$(stat -c%s "bbs/rxdb/rx.db")
-        echo "bbs/rxdb/rx.db: ${db_size} bytes" > tamp.txt
+        tar_size=$(stat -c%s "rxbbs.tar.gz")
+        # 写入 tamp.txt（可读格式）
+        {
+          echo "bbs/rxdb/rx.db: ${db_size} bytes"
+          echo "rxbbs.tar.gz: ${tar_size} bytes"
+        } > tamp.txt
         echo "tamp.txt 已生成："
         cat tamp.txt
         # ---------- 3. 配置 Git ----------
@@ -80,7 +82,7 @@ jobs:
         elif ! cmp -s "tamp.txt" "size.txt"; then
           cp tamp.txt size.txt
           git add size.txt
-          git commit -m "chore: update rx.db size $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git commit -m "chore: update size.txt $(date '+%Y-%m-%d %H:%M:%S')"
           commit_needed=true
           echo "size.txt 已更新"
         else
