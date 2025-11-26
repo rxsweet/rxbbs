@@ -21,9 +21,9 @@ jobs:
       - name: 执行任务 -update ftp
         uses: matteodf/lftp-upload@v1
         with:
-          host: ${BEGET_HOST}
-          username: ${BEGET_USER}
-          password: ${BEGET_PASS}
+          host: ${{ secrets.BEGET_FTP_HOST }}
+          username: ${{ secrets.BEGET_FTP_USER }}
+          password: ${{ secrets.BEGET_FTP_PASS }}
           localDir: ./bbs/
           remoteDir: bbs1/
           forceSsl: "false"
