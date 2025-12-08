@@ -21,4 +21,4 @@ jobs:
           port: 22
           #上传到目录下的 bbs 目录（相对路径）
           source: "bbs/"
-          target: "domains/${{ secrets.XREA_FTP_HOST }}/public_html/"
+          target: "public_html/bb/"
