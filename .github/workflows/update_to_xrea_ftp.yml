@@ -9,16 +9,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Upload bbs
-        uses: appleboy/scp-action@v1
+      - name: 设置时区
+        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+      - uses: actions/checkout@v4
         with:
-          host: ${{ secrets.XREA_FTP_HOST }}
-          username: ${{ secrets.XREA_FTP_USER }}
-          key: ${{ secrets.XREA_FTP_PASS }}
-          port: 22
-          #上传到目录下的 bbs 目录（相对路径）
-          source: "bbs/"
-          target: "public_html/bb/"
+          ref: ${{ github.ref }}
+      - name: 📦 Install ncftp
+        run: sudo apt-get update && sudo apt-get install -y ncftp
+      - name: 执行任务 -update ftp
+        env:
+          XREA_HOST: ${{ secrets.XREA_FTP_HOST }}
+          XREA_USER: ${{ secrets.XREA_FTP_USER }}
+          XREA_PASS: ${{ secrets.XREA_FTP_PASS }}
+        run: |
+           cd ./bbs
+           ncftpput -R -u ${XREA_USER} -p ${XREA_PASS} ${XREA_HOST} /bbs ./public_html/bb/*
+           #-R是递归上传文件夹
+           #-u user
+           #-p pass
+           #host (不带ftp://)
+           #/ 远程目录
+           #./test/ 本地目录
