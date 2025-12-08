@@ -1,0 +1,24 @@
+name: update_to_xrea_ftp
+# 触发条件
+on:
+  repository_dispatch:
+    types: [bbs-upload]
+  workflow_dispatch:  # 保留手动触发
+jobs:
+  upload-ftp:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Upload bbs
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.XREA_FTP_HOST }}
+          username: ${{ secrets.XREA_FTP_USER }}
+          key: ${{ secrets.XREA_FTP_PASS }}
+          port: 22
+          #上传到目录下的 bbs 目录（相对路径）
+          source: "bbs/"
+          target: "domains/${{ secrets.XREA_FTP_HOST }}/public_html/"
