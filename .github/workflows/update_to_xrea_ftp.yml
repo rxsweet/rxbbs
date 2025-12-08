@@ -23,7 +23,7 @@ jobs:
           XREA_PASS: ${{ secrets.XREA_FTP_PASS }}
         run: |
            cd ./bbs
-           ncftpput -R -u ${XREA_USER} -p ${XREA_PASS} ${XREA_HOST} /bbs ./public_html/bb/*
+           ncftpput -R -u ${XREA_USER} -p ${XREA_PASS} ${XREA_HOST} /public_html/bbs ./*
            #-R是递归上传文件夹
            #-u user
            #-p pass
