@@ -29,7 +29,7 @@ jobs:
         DATAONLINE_HOST: ${{ secrets.DATAONLINE_SSH_HOST }}
         DATAONLINE_DOMAIN: ${{ secrets.DATAONLINE_SSH_DOMAIN }}
         # 新增：如果你的主机 SSH 端口不是22，请在这里改
-        SSH_PORT: "22"          # ←←← 先保持22测试，如果不行改成2222、2022、21098等
+        SSH_PORT: "2222"          # ←←← 先保持22测试，如果不行改成2222、2022、21098等
       run: |
         set -euo pipefail
         echo "=== SSH 连接诊断 (端口: $SSH_PORT) ==="
