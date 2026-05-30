@@ -23,35 +23,39 @@ jobs:
 
     - name: 从 DataOnline FTP 备份 bbs 数据
       env:
-        FTP_HOST: "sv66.dataonline.vn"
-        FTP_USER: "rxsweeto"
-        FTP_PASS: "P93qvEaW"
-        DOMAIN: "1985.us.ci"          # ← 新增：你的域名
+        FTP_HOST: ${{ secrets.DATAONLINE_FTP_HOST }}
+        FTP_USER: ${{ secrets.DATAONLINE_FTP_USER }}
+        FTP_PASS: ${{ secrets.DATAONLINE_FTP_PASS }}
+        DOMAIN: ${{ secrets.DATAONLINE_DOMAIN }}
       run: |
         set -euo pipefail
-        echo "=== 开始 FTP 备份 ==="
+        echo "=== 开始 FTP 备份 (仅备份3个子文件夹) ==="
 
-        # 安装 lftp
         sudo apt-get update -qq && sudo apt-get install -y lftp
 
         REMOTE_PATH="domains/${DOMAIN}/public_html"
 
-        echo "远程路径: ${REMOTE_PATH}"
+        echo "远程路径: ${REMOTE_PATH}/bbs"
 
-        # 使用 lftp 下载整个 bbs 目录
+        # 只下载 bbs 下的三个文件夹
         lftp -u "${FTP_USER},${FTP_PASS}" ${FTP_HOST} << EOF
           set ssl:verify-certificate no
           set mirror:use-pget-n 5
           cd ${REMOTE_PATH}
-          mirror --verbose --parallel=5 --delete bbs ./bbs
+
+          # 只 mirror 这三个文件夹
+          mirror --verbose --parallel=5 --delete bbs/rxdb   ./bbs/rxdb
+          mirror --verbose --parallel=5 --delete bbs/files  ./bbs/files
+          mirror --verbose --parallel=5 --delete bbs/images ./bbs/images
           quit
         EOF
 
         echo "✅ FTP 下载完成"
+        echo "下载的文件夹："
         ls -lh bbs/ 2>/dev/null || echo "bbs 目录为空"
 
-        # 本地打包
-        echo "正在创建压缩包 rxbbs.tar.gz ..."
+        # 创建压缩包
+        echo "正在创建 rxbbs.tar.gz ..."
         tar -czf rxbbs.tar.gz bbs/
 
         echo "压缩包大小: $(stat -c%s rxbbs.tar.gz) bytes"
@@ -83,7 +87,7 @@ jobs:
           git add -f bbs/rxdb/ bbs/files/ bbs/images/ 2>/dev/null || true
           git add size.txt
           
-          git commit -m "backup: $(date '+%Y-%m-%d %H:%M:%S') rx.db + rxbbs.tar.gz"
+          git commit -m "backup: $(date '+%Y-%m-%d %H:%M:%S') rx.db + files + images"
           echo "NEED_PUSH=true" >> $GITHUB_ENV
         else
           echo "数据未变化，跳过提交"
