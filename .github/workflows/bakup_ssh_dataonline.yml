@@ -23,7 +23,7 @@ jobs:
 
     - name: 从 DataOnline FTP 备份 bbs 数据
       env:
-        FTP_HOST: "ftp.1985.us.ci"
+        FTP_HOST: "sv66.dataonline.vn"
         FTP_USER: "rxsweeto"
         FTP_PASS: "P93qvEaW"
         DOMAIN: "1985.us.ci"          # ← 新增：你的域名
