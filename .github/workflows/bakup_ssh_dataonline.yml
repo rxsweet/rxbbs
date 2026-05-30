@@ -28,42 +28,47 @@ jobs:
         DATAONLINE_USER: ${{ secrets.DATAONLINE_SSH_USER }}
         DATAONLINE_HOST: ${{ secrets.DATAONLINE_SSH_HOST }}
         DATAONLINE_DOMAIN: ${{ secrets.DATAONLINE_SSH_DOMAIN }}
-        # 新增：如果你的主机 SSH 端口不是22，请在这里改
-        SSH_PORT: "2222"          # ←←← 先保持22测试，如果不行改成2222、2022、21098等
       run: |
         set -euo pipefail
-        echo "=== SSH 连接诊断 (端口: $SSH_PORT) ==="
+        echo "=== SSH 连接最终诊断 (端口 2222) ==="
     
         mkdir -p ~/.ssh
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H -p $SSH_PORT $DATAONLINE_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
     
-        echo "主机: $DATAONLINE_HOST"
-        echo "端口: $SSH_PORT"
-        echo "用户名: $DATAONLINE_USER"
-    
+        # 添加更宽松的连接参数
+        echo "尝试连接 (端口 2222)..."
         ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no \
             -o ConnectTimeout=15 \
-            -p $SSH_PORT \
-            ${DATAONLINE_USER}@${DATAONLINE_HOST} "echo '✅ SSH 连接成功'" || {
-          echo "❌ 连接失败"
+            -o PubkeyAuthentication=yes \
+            -o PreferredAuthentications=publickey \
+            -p 2222 \
+            ${DATAONLINE_USER}@${DATAONLINE_HOST} "echo '✅ 登录成功'" 2>&1 || {
+          
+          echo "❌ 密钥认证失败（服务器关闭连接）"
+          echo ""
+          echo "常见解决办法："
+          echo "1. 在 DataOnline 控制面板重新添加 SSH 密钥"
+          echo "2. 检查服务器上 ~/.ssh/authorized_keys 是否存在且权限为 600"
+          echo "3. 尝试是否支持密码登录（但 Actions 中不推荐）"
+          echo "4. 联系 DataOnline 客服询问是否限制了 GitHub IP"
           exit 1
         }
     
         echo "✅ SSH 连接成功，继续备份..."
     
         REMOTE_PATH="/home/${DATAONLINE_USER}/domains/${DATAONLINE_DOMAIN}/public_html"
-        
-        # 后面压缩 + 下载部分保持你之前版本的逻辑（加 -O 和 -P 端口）
-        ssh -p $SSH_PORT ${DATAONLINE_USER}@${DATAONLINE_HOST} "
+    
+        ssh -p 2222 ${DATAONLINE_USER}@${DATAONLINE_HOST} "
           cd \"$REMOTE_PATH\" && rm -f rxbbs.tar.gz && tar -czf rxbbs.tar.gz bbs/
         "
     
-        scp -O -P $SSH_PORT -o StrictHostKeyChecking=no \
+        scp -O -P 2222 -o StrictHostKeyChecking=no \
             ${DATAONLINE_USER}@${DATAONLINE_HOST}:"$REMOTE_PATH/rxbbs.tar.gz" ./
     
-        ssh -p $SSH_PORT ${DATAONLINE_USER}@${DATAONLINE_HOST} "rm -f \"$REMOTE_PATH/rxbbs.tar.gz\""
+        ssh -p 2222 ${DATAONLINE_USER}@${DATAONLINE_HOST} "rm -f \"$REMOTE_PATH/rxbbs.tar.gz\""
+    
+        ls -lh rxbbs.tar.gz
         
     - name: 计算大小并判断是否需要提交（核心逻辑）
       env:
