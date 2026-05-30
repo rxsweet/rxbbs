@@ -10,7 +10,7 @@ jobs:
     permissions: write-all
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Upload bbs
         uses: appleboy/scp-action@v1
