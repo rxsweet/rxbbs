@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: 设置时区
         run: sudo timedatectl set-timezone 'Asia/Shanghai' 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
       - name: Install LFTP
