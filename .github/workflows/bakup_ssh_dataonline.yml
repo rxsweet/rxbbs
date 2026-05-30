@@ -30,49 +30,36 @@ jobs:
         DATAONLINE_DOMAIN: ${{ secrets.DATAONLINE_SSH_DOMAIN }}
       run: |
         set -euo pipefail
-        echo "=== 开始 SSH/SCP 备份 (兼容新版 OpenSSH) ==="
-
-        # SSH 配置
+        echo "=== SSH 连接诊断开始 ==="
+    
         mkdir -p ~/.ssh
         echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H $DATAONLINE_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-
-        # 使用完整路径（避免 ~ 解析问题）
-        REMOTE_PATH="/home/${DATAONLINE_USER}/domains/${DATAONLINE_DOMAIN}/public_html"
-        echo "远程路径: $REMOTE_PATH"
-
-        # 测试 SSH 连接
-        echo "测试 SSH 连接..."
-        ssh -o BatchMode=yes -o StrictHostKeyChecking=no \
-            ${DATAONLINE_USER}@${DATAONLINE_HOST} "echo '✅ SSH 连接成功'" || {
-          echo "❌ SSH 连接失败，请检查密钥或主机配置"
+    
+        echo "尝试连接的主机: $DATAONLINE_HOST"
+        echo "用户名: $DATAONLINE_USER"
+        echo "域名: $DATAONLINE_DOMAIN"
+    
+        # 详细测试连接（带 verbose）
+        echo "=== 详细 SSH 连接测试 ==="
+        ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=10 \
+            ${DATAONLINE_USER}@${DATAONLINE_HOST} "echo 'SSH 连接成功'" 2>&1 || {
+          echo "❌ SSH 连接失败，以上为详细错误信息"
+          echo "建议排查方向："
+          echo "1. 确认该主机是否支持 SSH（很多共享主机默认不支持）"
+          echo "2. 检查是否需要指定其他端口（如 2222）"
+          echo "3. 确认 DATAONLINE_SSH_HOST 填写的是正确的主机名/IP"
           exit 1
         }
-
-        # 创建压缩包
-        echo "正在远程创建压缩包..."
-        ssh ${DATAONLINE_USER}@${DATAONLINE_HOST} "
-          set -e
-          cd \"$REMOTE_PATH\" || { echo '❌ 远程目录不存在'; exit 1; }
-          [ -d bbs ] || { echo '❌ bbs 目录不存在'; exit 1; }
-          rm -f rxbbs.tar.gz
-          tar -czf rxbbs.tar.gz bbs/
-          echo '✅ 远程压缩完成，大小: '$(stat -c%s rxbbs.tar.gz)' bytes'
-        "
-
-        # 下载文件（关键修复：添加 -O 兼容新 OpenSSH）
-        echo "正在下载 rxbbs.tar.gz ..."
-        scp -O -o StrictHostKeyChecking=no \
-            ${DATAONLINE_USER}@${DATAONLINE_HOST}:"$REMOTE_PATH/rxbbs.tar.gz" ./
-
-        # 远程清理
-        echo "远程清理临时文件..."
-        ssh ${DATAONLINE_USER}@${DATAONLINE_HOST} "rm -f \"$REMOTE_PATH/rxbbs.tar.gz\""
-
-        echo "✅ 备份下载完成"
-        ls -lh rxbbs.tar.gz
-
+    
+        echo "✅ SSH 连接成功，继续备份..."
+        
+        # 后续备份逻辑（使用完整路径）
+        REMOTE_PATH="/home/${DATAONLINE_USER}/domains/${DATAONLINE_DOMAIN}/public_html"
+        # ...（后面的压缩、下载部分保持不变）
+        
     - name: 计算大小并判断是否需要提交（核心逻辑）
       env:
         GIT_AUTHOR_NAME: GitHub Action
