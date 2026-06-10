@@ -29,30 +29,61 @@ jobs:
         DOMAIN: ${{ secrets.DATAONLINE_DOMAIN }}
       run: |
         set -euo pipefail
-        echo "=== 开始 FTP 备份 (仅3个文件夹) ==="
-    
-        sudo apt-get update -qq && sudo apt-get install -y lftp sqlite3
-    
+
+        echo "=== 开始 FTP 备份 ==="
+
+        sudo apt-get update -qq
+        sudo apt-get install -y lftp
+
         REMOTE_PATH="domains/${DOMAIN}/public_html"
-    
-        # 下载三个文件夹
+
+        mkdir -p bbs/rxdb
+
         lftp -u "${FTP_USER},${FTP_PASS}" ${FTP_HOST} << EOF
-          set ssl:verify-certificate no
-          cd ${REMOTE_PATH}
-          #mirror --verbose --parallel=3 --delete bbs/rxdb   ./bbs/rxdb
-          get bbs/rxdb/rx.db -o ./bbs/rxdb/rx.db
-          mirror --verbose --parallel=3 --delete bbs/files  ./bbs/files
-          mirror --verbose --parallel=3 --delete bbs/images ./bbs/images
-          quit
+        set ssl:verify-certificate no
+        cd ${REMOTE_PATH}
+
+        # 下载数据库
+        get bbs/rxdb/rx.db -o ./bbs/rxdb/rx.db
+
+        # 下载附件和图片
+        mirror --verbose --parallel=3 --delete bbs/files  ./bbs/files
+        mirror --verbose --parallel=3 --delete bbs/images ./bbs/images
+
+        quit
         EOF
-    
-        echo "✅ FTP 下载完成"
-    
-        # 打包
-        echo "正在创建 rxbbs.tar.gz ..."
+
+        echo "=== 检查 rx.db ==="
+
+        if [ ! -f "bbs/rxdb/rx.db" ]; then
+          echo "❌ rx.db 下载失败"
+          exit 1
+        fi
+
+        db_size=$(stat -c%s "bbs/rxdb/rx.db")
+
+        if [ "$db_size" -eq 0 ]; then
+          echo "❌ rx.db 文件为空"
+          exit 1
+        fi
+
+        echo "✅ rx.db 下载成功"
+        echo "rx.db 大小: ${db_size} bytes"
+
+        # 可选：防止下载到异常小文件
+        if [ "$db_size" -lt 10240 ]; then
+          echo "❌ rx.db 大小异常"
+          exit 1
+        fi
+
+        echo "=== 创建压缩包 ==="
+
         tar -czf rxbbs.tar.gz bbs/
-    
-        echo "压缩包大小: $(stat -c%s rxbbs.tar.gz) bytes"
+
+        tar_size=$(stat -c%s rxbbs.tar.gz)
+
+        echo "✅ 打包完成"
+        echo "压缩包大小: ${tar_size} bytes"
 
     - name: 计算大小并判断是否需要提交
       env:
