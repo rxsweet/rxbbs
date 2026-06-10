@@ -42,8 +42,8 @@ jobs:
         lftp -u "${FTP_USER},${FTP_PASS}" ${FTP_HOST} << EOF
         set ssl:verify-certificate no
         cd ${REMOTE_PATH}
-
         # 下载数据库
+        set xfer:clobber on
         get bbs/rxdb/rx.db -o ./bbs/rxdb/rx.db
 
         # 下载附件和图片
