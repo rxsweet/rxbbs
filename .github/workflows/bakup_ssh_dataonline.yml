@@ -39,38 +39,14 @@ jobs:
         lftp -u "${FTP_USER},${FTP_PASS}" ${FTP_HOST} << EOF
           set ssl:verify-certificate no
           cd ${REMOTE_PATH}
-          mirror --verbose --parallel=3 --delete bbs/rxdb   ./bbs/rxdb
+          #mirror --verbose --parallel=3 --delete bbs/rxdb   ./bbs/rxdb
+          get bbs/rxdb/rx.db -o ./bbs/rxdb/rx.db
           mirror --verbose --parallel=3 --delete bbs/files  ./bbs/files
           mirror --verbose --parallel=3 --delete bbs/images ./bbs/images
           quit
         EOF
     
         echo "✅ FTP 下载完成"
-    
-        # 关键修复：检查并尝试修复 SQLite 数据库
-        echo "正在检查 rx.db 完整性..."
-        if [ -f "bbs/rxdb/rx.db" ]; then
-          db_size=$(stat -c%s "bbs/rxdb/rx.db")
-          echo "rx.db 大小: ${db_size} bytes"
-    
-          # 测试数据库
-          if sqlite3 "bbs/rxdb/rx.db" "PRAGMA integrity_check;" > /dev/null 2>&1; then
-            echo "✅ rx.db 完整性检查通过"
-          else
-            echo "⚠️ 数据库损坏，尝试修复..."
-            # 尝试导出+重建（最有效修复方法）
-            sqlite3 "bbs/rxdb/rx.db" ".dump" > rxdb_dump.sql 2>/dev/null || true
-            if [ -s rxdb_dump.sql ]; then
-              mv "bbs/rxdb/rx.db" "bbs/rxdb/rx.db.bak"
-              sqlite3 "bbs/rxdb/rx.db" < rxdb_dump.sql
-              echo "✅ 已尝试自动修复数据库"
-            else
-              echo "❌ 无法修复数据库，可能下载不完整"
-            fi
-          fi
-        else
-          echo "❌ 未找到 rx.db 文件"
-        fi
     
         # 打包
         echo "正在创建 rxbbs.tar.gz ..."
