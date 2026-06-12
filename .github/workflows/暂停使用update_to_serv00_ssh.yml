@@ -1,8 +1,8 @@
 name: 暂停使用update_to_serv00_ssh
 # 触发条件
 on:
-  repository_dispatch:
-    types: [bbs-upload]
+  #repository_dispatch:
+    #types: [bbs-upload]
   workflow_dispatch:  # 保留手动触发
 jobs:
   upload-ftp:
