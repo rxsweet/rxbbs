@@ -1,0 +1,95 @@
+name: bakup_ssh_serv00
+on:
+  workflow_dispatch:
+  schedule:
+   - cron: '0 10 * * *'
+  #实际时间：+ 8小时  = 18:00
+  #这个实际每天18:00执行
+  #表达式生成  https://crontab.guru/
+permissions: write-all
+
+jobs:
+  backup-serv00:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: 设置时区
+      run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+    - name: Backup from Serv00
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SERV00_SSH_KEY }}
+        SERV00_USER: ${{ secrets.SERV00_SSH_USER }}
+        SERV00_HOST: ${{ secrets.SERV00_SSH_HOST }}
+      run: |
+        # 设置SSH
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H $SERV00_HOST >> ~/.ssh/known_hosts
+        
+        #bbs的文件路径
+        path="~/domains/${SERV00_HOST}/public_html"
+        echo "使用路径: $path"
+        # 创建压缩文件
+        ssh ${SERV00_USER}@${SERV00_HOST} "cd $path && tar -czf rxbbs.tar.gz bbs/"
+        # 下载
+        scp ${SERV00_USER}@${SERV00_HOST}:"$path/rxbbs.tar.gz" ./
+        # 清理
+        ssh ${SERV00_USER}@${SERV00_HOST} "rm $path/rxbbs.tar.gz"
+
+
+    - name: 计算大小并判断是否需要提交
+      env:
+        GIT_AUTHOR_NAME: GitHub Action
+        GIT_AUTHOR_EMAIL: action@github.com
+      run: |
+        set -euo pipefail
+
+        db_size=$(stat -c%s "bbs/rxdb/rx.db" 2>/dev/null || echo "0")
+        tar_size=$(stat -c%s "rxbbs.tar.gz")
+
+        cat > tamp.txt << EOF
+        bbs/rxdb/rx.db: ${db_size} bytes
+        rxbbs.tar.gz: ${tar_size} bytes
+        EOF
+
+        if [ ! -f "size.txt" ] || ! cmp -s "tamp.txt" "size.txt"; then
+          echo "检测到数据变化，准备提交..."
+          
+          cp tamp.txt size.txt
+          
+          git config user.name "$GIT_AUTHOR_NAME"
+          git config user.email "$GIT_AUTHOR_EMAIL"
+          
+          git add -f rxbbs.tar.gz
+          git add -f bbs/rxdb/ bbs/files/ bbs/images/ 2>/dev/null || true
+          git add size.txt
+          
+          git commit -m "backup: $(date '+%Y-%m-%d %H:%M:%S') rx.db + files + images"
+          echo "NEED_PUSH=true" >> $GITHUB_ENV
+        else
+          echo "数据未变化，跳过提交"
+          echo "NEED_PUSH=false" >> $GITHUB_ENV
+        fi
+
+    - name: Push 到 main 分支
+      if: env.NEED_PUSH == 'true'
+      run: |
+        git push origin main
+        echo "✅ 已推送到 main 分支"
+
+    - name: 触发 FTP 上传工作流
+      if: env.NEED_PUSH == 'true'
+      run: |
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.CHU_FA_ACTIONS_GONG_ZUO_LIU_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/dispatches \
+          -d '{
+            "event_type": "bbs-upload",
+            "client_payload": {
+              "triggered_by": "bakup_ssh_serv00",
+              "reason": "size.txt updated"
+            }
+          }'
