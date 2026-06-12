@@ -1,9 +1,9 @@
-name: bakup_ssh_dataonline
-
+name: 暂停使用bakup_ssh_dataonline
+#因dataonline备份文件老是出错，暂时换回serv00
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 10 * * *' # 每天北京时间 18:00
+  #schedule:
+    #- cron: '0 10 * * *' # 每天北京时间 18:00
 
 permissions: write-all
 
