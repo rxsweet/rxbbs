@@ -1,0 +1,33 @@
+name: update_to_Dataonline_ftp
+# 触发条件
+on:
+  repository_dispatch:
+    types: [bbs-upload]
+  workflow_dispatch:  # 保留手动触发
+jobs:
+  upload-ftp:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: 设置时区
+        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+      - name: 📦 Install ncftp
+        run: sudo apt-get update && sudo apt-get install -y ncftp
+      - name: 执行任务 -update ftp
+        env:
+          DATAONLINE_HOST: ${{ secrets.DATAONLINE_FTP_HOST }}
+          DATAONLINE_USER: ${{ secrets.DATAONLINE_FTP_USER }}
+          DATAONLINE_PASS: ${{ secrets.DATAONLINE_FTP_PASS }}
+          DOMAIN: ${{ secrets.DATAONLINE_DOMAIN }}
+        run: |
+           cd ./bbs
+           ncftpput -R -u ${DATAONLINE_USER} -p ${DATAONLINE_PASS} ${DATAONLINE_HOST} /domains/${DOMAIN}/public_html/bbs ./*
+           #-R是递归上传文件夹
+           #-u user
+           #-p pass
+           #host (不带ftp://)
+           #/ 远程目录
+           #./test/ 本地目录
