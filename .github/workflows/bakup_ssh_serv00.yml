@@ -38,6 +38,17 @@ jobs:
         # 清理
         ssh ${SERV00_USER}@${SERV00_HOST} "rm $path/rxbbs.tar.gz"
 
+    - name: 解压备份文件
+      run: |
+        set -e
+
+        if [ -f "rxbbs.tar.gz" ]; then
+          rm -rf bbs
+          tar -xzf rxbbs.tar.gz
+        else
+          echo "未找到 rxbbs.tar.gz"
+          exit 1
+        fi
 
     - name: 计算大小并判断是否需要提交
       env:
