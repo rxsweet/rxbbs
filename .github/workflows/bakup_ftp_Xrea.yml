@@ -1,50 +1,68 @@
 name: bakup_ftp_Xrea
-# 触发条件
+
 on:
   workflow_dispatch:
   schedule:
-   - cron: '0 10 * * *'
-  #实际时间：+ 8小时  = 18:00
-  #这个实际每天18:00执行
-  #表达式生成  https://crontab.guru/
+    - cron: '0 10 * * *'
+    # UTC 10:00 = 北京时间 18:00
 
 permissions: write-all
+
 jobs:
   main:
     runs-on: ubuntu-latest
+
     steps:
       - name: 设置时区
-        run: sudo timedatectl set-timezone 'Asia/Shanghai' 
+        run: sudo timedatectl set-timezone 'Asia/Shanghai'
+
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.ref }}
+
       - name: 📦 Install ncftp
-        run: sudo apt-get update && sudo apt-get install -y ncftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ncftp
+
       - name: 执行任务 -update ftp
         env:
           XREA_HOST: ${{ secrets.XREA_FTP_HOST }}
           XREA_USER: ${{ secrets.XREA_FTP_USER }}
           XREA_PASS: ${{ secrets.XREA_FTP_PASS }}
         run: |
-           mkdir -p ./bbs/rxdb ./bbs/files ./bbs/images ./bbs/styles
-           cd ./bbs/rxdb
-           #ncftpget -R -T -v ftp://${FREEHOSTIA_USER}:${FREEHOSTIA_PASS}@${FREEHOSTIA_HOST}/bbs/rxdb/ .
-           ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/rxdb/ .
-           cd ../files
-           ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/files/ .
-           cd ../images
-           ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/images/ .
-           cd ../styles
-           ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/styles/ .
-           #下载ncftpget ncftpget -R -u ${FREEHOSTIA_USER}:${FREEHOSTIA_PASS} ftp://${FREEHOSTIA_HOST}/bbs/rxdb/ ./bbs/rxdb/
-           #上传ncftpput -R -u ${FREEHOSTIA_USER} -p ${FREEHOSTIA_PASS} ${FREEHOSTIA_HOST} / ./test/
-           #-R是递归上传文件夹
-           #-u user
-           #-p pass
-           #host (不带ftp://)
-           #/ 远程目录
-           #./test/ 本地目录
-      - name: 检测rx.db文件,压缩rxbbs.tar.gz
+          set -euo pipefail
+
+          echo "=== 删除旧文件 ==="
+          rm -rf ./bbs
+
+          echo "=== 创建目录 ==="
+          mkdir -p ./bbs/rxdb ./bbs/files ./bbs/images ./bbs/styles
+
+          echo "=== 下载 rxdb ==="
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/rxdb/ \
+            ./bbs/rxdb/
+
+          echo "=== 下载 files ==="
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/files/ \
+            ./bbs/files/
+
+          echo "=== 下载 images ==="
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/images/ \
+            ./bbs/images/
+
+          echo "=== 下载 styles ==="
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/styles/ \
+            ./bbs/styles/
+
+          echo "=== 下载完成 ==="
+          find ./bbs -type f | head -20
+
+      - name: 检测 rx.db 文件并压缩
         run: |
           set -euo pipefail
 
@@ -65,7 +83,6 @@ jobs:
           echo "✅ rx.db 下载成功"
           echo "rx.db 大小: ${db_size} bytes"
 
-          # 可选：防止下载到异常小文件
           if [ "$db_size" -lt 10240 ]; then
             echo "❌ rx.db 大小异常"
             exit 1
@@ -73,13 +90,15 @@ jobs:
 
           echo "=== 创建压缩包 ==="
 
+          rm -f rxbbs.tar.gz
+
           tar -czf rxbbs.tar.gz bbs/
 
           tar_size=$(stat -c%s rxbbs.tar.gz)
 
           echo "✅ 打包完成"
           echo "压缩包大小: ${tar_size} bytes"
-        
+
       - name: 计算大小并判断是否需要提交
         env:
           GIT_AUTHOR_NAME: GitHub Action
@@ -97,18 +116,23 @@ jobs:
 
           if [ ! -f "size.txt" ] || ! cmp -s "tamp.txt" "size.txt"; then
             echo "检测到数据变化，准备提交..."
-          
+
             cp tamp.txt size.txt
-          
+
             git config user.name "$GIT_AUTHOR_NAME"
             git config user.email "$GIT_AUTHOR_EMAIL"
-          
+
             git add -f rxbbs.tar.gz
             git add -f bbs/rxdb/ bbs/files/ bbs/images/ 2>/dev/null || true
             git add size.txt
-          
-            git commit -m "backup: $(date '+%Y-%m-%d %H:%M:%S') rx.db + files + images"
-            echo "NEED_PUSH=true" >> $GITHUB_ENV
+
+            if git diff --cached --quiet; then
+              echo "没有实际变更"
+              echo "NEED_PUSH=false" >> $GITHUB_ENV
+            else
+              git commit -m "backup: $(date '+%Y-%m-%d %H:%M:%S') rx.db + files + images"
+              echo "NEED_PUSH=true" >> $GITHUB_ENV
+            fi
           else
             echo "数据未变化，跳过提交"
             echo "NEED_PUSH=false" >> $GITHUB_ENV
