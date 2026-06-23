@@ -1,5 +1,6 @@
 name: 暂停_update_to_xrea_ftp
 #因使用xrea备份暂停使用
+#关掉了触发条件
 # 触发条件
 on:
   #repository_dispatch:
