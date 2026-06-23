@@ -40,24 +40,20 @@ jobs:
           mkdir -p ./bbs/rxdb ./bbs/files ./bbs/images ./bbs/styles
 
           echo "=== 下载 rxdb ==="
-          ncftpget -R -v \
-            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/rxdb/ \
-            ./bbs/rxdb/
+          cd ./bbs/rxdb
+          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/rxdb/ .
 
           echo "=== 下载 files ==="
-          ncftpget -R -v \
-            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/files/ \
-            ./bbs/files/
+          cd ../files
+          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/files/ .
 
           echo "=== 下载 images ==="
-          ncftpget -R -v \
-            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/images/ \
-            ./bbs/images/
+          cd ../images
+          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/images/ .
 
           echo "=== 下载 styles ==="
-          ncftpget -R -v \
-            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/styles/ \
-            ./bbs/styles/
+          cd ../styles
+          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/styles/ .
 
           echo "=== 下载完成 ==="
           find ./bbs -type f | head -20
