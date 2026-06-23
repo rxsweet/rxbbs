@@ -66,8 +66,6 @@ jobs:
           cd "$ROOT_DIR"
 
           echo "=== 下载完成 ==="
-          find ./bbs -type f | head -50 || true
-
 
       - name: 检测 rx.db 文件并压缩
         run: |
