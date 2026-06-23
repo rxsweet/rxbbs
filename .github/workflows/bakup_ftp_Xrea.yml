@@ -26,9 +26,9 @@ jobs:
           XREA_USER: ${{ secrets.XREA_FTP_USER }}
           XREA_PASS: ${{ secrets.XREA_FTP_PASS }}
         run: |
-           mkdir -p ./bbs1/rxdb ./bbs1/files ./bbs1/images ./bbs1/styles
-           cd ./bbs1/rxdb
-           #ncftpget -R -T -v ftp://${FREEHOSTIA_USER}:${FREEHOSTIA_PASS}@${FREEHOSTIA_HOST}/bbs1/rxdb/ .
+           mkdir -p ./bbs/rxdb ./bbs/files ./bbs/images ./bbs/styles
+           cd ./bbs/rxdb
+           #ncftpget -R -T -v ftp://${FREEHOSTIA_USER}:${FREEHOSTIA_PASS}@${FREEHOSTIA_HOST}/bbs/rxdb/ .
            ncftpget -R -T -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/rxdb/ .
            cd ../files
            ncftpget -R -T -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/files/ .
@@ -36,7 +36,7 @@ jobs:
            ncftpget -R -T -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/images/ .
            cd ../styles
            ncftpget -R -T -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/styles/ .
-           #下载ncftpget ncftpget -R -u ${FREEHOSTIA_USER}:${FREEHOSTIA_PASS} ftp://${FREEHOSTIA_HOST}/bbs1/rxdb/ ./bbs1/rxdb/
+           #下载ncftpget ncftpget -R -u ${FREEHOSTIA_USER}:${FREEHOSTIA_PASS} ftp://${FREEHOSTIA_HOST}/bbs/rxdb/ ./bbs/rxdb/
            #上传ncftpput -R -u ${FREEHOSTIA_USER} -p ${FREEHOSTIA_PASS} ${FREEHOSTIA_HOST} / ./test/
            #-R是递归上传文件夹
            #-u user
