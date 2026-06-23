@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 10 * * *'
-    # UTC 10:00 = 北京时间 18:00
 
 permissions: write-all
 
@@ -33,61 +32,77 @@ jobs:
         run: |
           set -euo pipefail
 
+          ROOT_DIR=$(pwd)
+
           echo "=== 删除旧文件 ==="
-          rm -rf ./bbs
+          rm -rf "$ROOT_DIR/bbs"
 
           echo "=== 创建目录 ==="
-          mkdir -p ./bbs/rxdb ./bbs/files ./bbs/images ./bbs/styles
+          mkdir -p "$ROOT_DIR/bbs/rxdb"
+          mkdir -p "$ROOT_DIR/bbs/files"
+          mkdir -p "$ROOT_DIR/bbs/images"
+          mkdir -p "$ROOT_DIR/bbs/styles"
 
           echo "=== 下载 rxdb ==="
-          cd ./bbs/rxdb
-          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/rxdb/ .
+          cd "$ROOT_DIR/bbs/rxdb"
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/rxdb/ .
 
           echo "=== 下载 files ==="
-          cd ../files
-          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/files/ .
+          cd "$ROOT_DIR/bbs/files"
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/files/ .
 
           echo "=== 下载 images ==="
-          cd ../images
-          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/images/ .
+          cd "$ROOT_DIR/bbs/images"
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/images/ .
 
           echo "=== 下载 styles ==="
-          cd ../styles
-          ncftpget -R -v ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/styles/ .
+          cd "$ROOT_DIR/bbs/styles"
+          ncftpget -R -v \
+            ftp://${XREA_USER}:${XREA_PASS}@${XREA_HOST}/public_html/bbs/styles/ .
+
+          cd "$ROOT_DIR"
 
           echo "=== 下载完成 ==="
-          find ./bbs -type f | head -20
+          find ./bbs -type f | head -50
+
+          echo "=== 查找 rx.db ==="
+          find ./bbs -name "rx.db"
 
       - name: 检测 rx.db 文件并压缩
         run: |
           set -euo pipefail
 
-          echo "=== 检查 rx.db ==="
+          echo "=== 查找 rx.db ==="
+          RXDB_PATH=$(find ./bbs -name "rx.db" | head -1)
 
-          if [ ! -f "bbs/rxdb/rx.db" ]; then
-            echo "❌ rx.db 下载失败"
+          if [ -z "$RXDB_PATH" ]; then
+            echo "❌ 未找到 rx.db"
             exit 1
           fi
 
-          db_size=$(stat -c%s "bbs/rxdb/rx.db")
+          echo "找到数据库：$RXDB_PATH"
+
+          db_size=$(stat -c%s "$RXDB_PATH")
 
           if [ "$db_size" -eq 0 ]; then
             echo "❌ rx.db 文件为空"
             exit 1
           fi
 
-          echo "✅ rx.db 下载成功"
-          echo "rx.db 大小: ${db_size} bytes"
-
           if [ "$db_size" -lt 10240 ]; then
             echo "❌ rx.db 大小异常"
             exit 1
           fi
 
-          echo "=== 创建压缩包 ==="
+          echo "✅ rx.db 下载成功"
+          echo "rx.db 大小: ${db_size} bytes"
 
           rm -f rxbbs.tar.gz
 
+          echo "=== 创建压缩包 ==="
           tar -czf rxbbs.tar.gz bbs/
 
           tar_size=$(stat -c%s rxbbs.tar.gz)
@@ -102,11 +117,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          db_size=$(stat -c%s "bbs/rxdb/rx.db" 2>/dev/null || echo "0")
+          RXDB_PATH=$(find ./bbs -name "rx.db" | head -1)
+
+          db_size=$(stat -c%s "$RXDB_PATH")
           tar_size=$(stat -c%s "rxbbs.tar.gz")
 
           cat > tamp.txt << EOF
-          bbs/rxdb/rx.db: ${db_size} bytes
+          rx.db: ${db_size} bytes
           rxbbs.tar.gz: ${tar_size} bytes
           EOF
 
@@ -119,14 +136,14 @@ jobs:
             git config user.email "$GIT_AUTHOR_EMAIL"
 
             git add -f rxbbs.tar.gz
-            git add -f bbs/rxdb/ bbs/files/ bbs/images/ 2>/dev/null || true
+            git add -f bbs/ 2>/dev/null || true
             git add size.txt
 
             if git diff --cached --quiet; then
               echo "没有实际变更"
               echo "NEED_PUSH=false" >> $GITHUB_ENV
             else
-              git commit -m "backup: $(date '+%Y-%m-%d %H:%M:%S') rx.db + files + images"
+              git commit -m "backup: $(date '+%Y-%m-%d %H:%M:%S')"
               echo "NEED_PUSH=true" >> $GITHUB_ENV
             fi
           else
