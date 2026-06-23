@@ -1,10 +1,8 @@
-name: 暂停_update_to_xrea_ftp
-#因使用xrea备份暂停使用
-#关掉了触发条件
+name: update_to_xrea_ftp
 # 触发条件
 on:
-  #repository_dispatch:
-    #types: [bbs-upload]
+  repository_dispatch:
+    types: [bbs-upload]
   workflow_dispatch:  # 保留手动触发
 jobs:
   upload-ftp:
