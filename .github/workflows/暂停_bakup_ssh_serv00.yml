@@ -1,10 +1,9 @@
-name: 暂停_bakup_ssh_serv00
-#暂时现用xrea备份，如xrea不能使用，再用serv00备份
+name: bakup_ssh_serv00
 #关掉了下面的定时备份
 on:
   workflow_dispatch:
-  #schedule:
-   #- cron: '0 10 * * *'
+  schedule:
+   - cron: '0 10 * * *'
   #实际时间：+ 8小时  = 18:00
   #这个实际每天18:00执行
   #表达式生成  https://crontab.guru/
