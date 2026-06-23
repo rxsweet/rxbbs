@@ -1,4 +1,4 @@
-name: bakup_ssh_serv00
+name: 暂停_bakup_ssh_serv00
 #暂时现用xrea备份，如xrea不能使用，再用serv00备份
 #关掉了下面的定时备份
 on:
